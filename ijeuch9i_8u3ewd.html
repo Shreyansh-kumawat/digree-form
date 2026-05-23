@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responses</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #1a56db;
+      --blue-light: #e8f0fe;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f0f4ff;
+      --surface: #ffffff;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(26,86,219,0.08);
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+    .wrapper { max-width: 960px; margin: 0 auto; }
+
+    .page-header {
+      background: var(--surface);
+      border-top: 5px solid var(--blue);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .page-header h1 { font-size: 1.4rem; font-weight: 800; color: var(--blue); }
+    .page-header .meta { font-size: 0.82rem; color: var(--text-muted); }
+
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      box-shadow: var(--shadow);
+      flex: 1;
+      min-width: 140px;
+      border: 1px solid var(--border);
+    }
+    .stat-card .num { font-size: 2rem; font-weight: 800; color: var(--blue); }
+    .stat-card .label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    /* Response cards */
+    .response-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .response-card .r-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .response-card .r-id {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--blue-light);
+      padding: 0.25rem 0.65rem;
+      border-radius: 20px;
+    }
+    .response-card .r-time {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .r-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.85rem;
+    }
+    .r-field { }
+    .r-field .f-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+    .r-field .f-val {
+      font-size: 0.88rem;
+      color: var(--text);
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.65rem;
+      min-height: 32px;
+      word-break: break-word;
+    }
+    .f-val.empty { color: #d1d5db; font-style: italic; }
+
+    /* Tags for array fields */
+    .tag-wrap { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.35rem 0.5rem; background:#f9fafb; border:1px solid var(--border); border-radius:6px; min-height:32px; }
+    .tag { background: var(--blue-light); color: var(--blue); border-radius: 20px; padding: 0.15rem 0.6rem; font-size: 0.78rem; font-weight: 600; }
+
+    /* Loading / empty */
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.95rem; }
+
+    .refresh-btn {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .refresh-btn:hover { background: #1240b0; }
+
+    @media (max-width: 540px) {
+      .response-card { padding: 1.1rem; }
+      .page-header { padding: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="page-header">
+    <div>
+      <h1>3Digree — Responses</h1>
+      <div class="meta">Form ID: 3Di_ss_028</div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="num" id="totalCount">—</div>
+      <div class="label">Total Responses</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="todayCount">—</div>
+      <div class="label">Today</div>
+    </div>
+  </div>
+
+  <div id="status">Loading responses…</div>
+  <div id="container"></div>
+
+</div>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+  const supabase = createClient(
+    'https://oqkutrgjpbohhpikarer.supabase.co',
+    'sb_publishable_lQc9S-u5jsMGSVYzXHv2GA_J9OEthDe'
+  );
+
+  window.loadData = async function () {
+    document.getElementById('status').textContent = 'Loading responses…';
+    document.getElementById('container').innerHTML = '';
+
+    const { data, error } = await supabase
+      .from('form_responses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      document.getElementById('status').textContent = 'Error loading data: ' + error.message;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      document.getElementById('status').textContent = 'No responses yet.';
+      document.getElementById('totalCount').textContent = '0';
+      document.getElementById('todayCount').textContent = '0';
+      return;
+    }
+
+    document.getElementById('status').style.display = 'none';
+
+    // Stats
+    const today = new Date().toISOString().slice(0, 10);
+    const todayCount = data.filter(r => r.created_at?.slice(0, 10) === today).length;
+    document.getElementById('totalCount').textContent = data.length;
+    document.getElementById('todayCount').textContent = todayCount;
+
+    const container = document.getElementById('container');
+
+    const fields = [
+      { key: 'selling_area',          label: 'Selling Area' },
+      { key: 'selling_states',        label: 'Limited States' },
+      { key: 'brand_positioning',     label: 'Brand Positioning' },
+      { key: 'product_price_range',   label: 'Price Range (₹)' },
+      { key: 'usp',                   label: 'USP', isArray: true },
+      { key: 'usp_other',             label: 'USP – Other' },
+      { key: 'brand_plan',            label: 'Long-term Brand Plan' },
+      { key: 'payment_option',        label: 'Payment Option' },
+      { key: 'marketing_source',      label: 'Marketing Source' },
+      { key: 'marketing_other',       label: 'Marketing – Other' },
+      { key: 'brand_vibe',            label: 'Brand Vibe', isArray: true },
+      { key: 'brand_vibe_other',      label: 'Brand Vibe – Other' },
+      { key: 'preferred_color_theme', label: 'Preferred Color Theme' },
+      { key: 'business_model',        label: 'Business Model' },
+      { key: 'business_model_other',  label: 'Business Model – Other' },
+    ];
+
+    data.forEach((row, idx) => {
+      const card = document.createElement('div');
+      card.className = 'response-card';
+
+      const dt = row.created_at
+        ? new Date(row.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+        : '—';
+
+      card.innerHTML = `
+        <div class="r-header">
+          <span class="r-id">#${data.length - idx}</span>
+          <span class="r-time">${dt}</span>
+        </div>
+        <div class="r-grid">
+          ${fields.map(f => {
+            const val = row[f.key];
+            let content = '';
+            if (f.isArray && Array.isArray(val) && val.length > 0) {
+              content = `<div class="tag-wrap">${val.map(v => `<span class="tag">${v}</span>`).join('')}</div>`;
+            } else if (val && String(val).trim() !== '') {
+              content = `<div class="f-val">${String(val)}</div>`;
+            } else {
+              content = `<div class="f-val empty">—</div>`;
+            }
+            return `<div class="r-field"><div class="f-label">${f.label}</div>${content}</div>`;
+          }).join('')}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  };
+
+  loadData();
+</script>
+</body>
+</html>
