@@ -16,6 +16,9 @@
       --surface: #ffffff;
       --radius: 10px;
       --shadow: 0 2px 12px rgba(26,86,219,0.08);
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --red-hover: #b91c1c;
     }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
@@ -41,6 +44,7 @@
     }
     .page-header h1 { font-size: 1.4rem; font-weight: 800; color: var(--blue); }
     .page-header .meta { font-size: 0.82rem; color: var(--text-muted); }
+    .header-btns { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 
     .stats-row {
       display: flex;
@@ -68,6 +72,12 @@
       margin-bottom: 1.25rem;
       box-shadow: var(--shadow);
       border: 1px solid var(--border);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .response-card.deleting {
+      opacity: 0;
+      transform: scale(0.97);
+      pointer-events: none;
     }
     .response-card .r-header {
       display: flex;
@@ -77,6 +87,7 @@
       flex-wrap: wrap;
       gap: 0.5rem;
     }
+    .r-header-left { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
     .response-card .r-id {
       font-size: 0.78rem;
       font-weight: 700;
@@ -95,7 +106,6 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 0.85rem;
     }
-    .r-field { }
     .r-field .f-label {
       font-size: 0.72rem;
       font-weight: 700;
@@ -116,13 +126,12 @@
     }
     .f-val.empty { color: #d1d5db; font-style: italic; }
 
-    /* Tags for array fields */
     .tag-wrap { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.35rem 0.5rem; background:#f9fafb; border:1px solid var(--border); border-radius:6px; min-height:32px; }
     .tag { background: var(--blue-light); color: var(--blue); border-radius: 20px; padding: 0.15rem 0.6rem; font-size: 0.78rem; font-weight: 600; }
 
-    /* Loading / empty */
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.95rem; }
 
+    /* Buttons */
     .refresh-btn {
       background: var(--blue);
       color: #fff;
@@ -135,6 +144,77 @@
       transition: background 0.15s;
     }
     .refresh-btn:hover { background: #1240b0; }
+
+    .del-btn {
+      background: var(--red-light);
+      color: var(--red);
+      border: 1.5px solid #fca5a5;
+      border-radius: 8px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .del-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+    .del-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Confirm modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 2rem;
+      max-width: 360px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      text-align: center;
+    }
+    .modal h3 { font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 0.6rem; }
+    .modal p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5; }
+    .modal-btns { display: flex; gap: 0.75rem; justify-content: center; }
+    .modal-cancel {
+      background: #f3f4f6; color: var(--text); border: none;
+      border-radius: 8px; padding: 0.6rem 1.4rem;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .modal-cancel:hover { background: #e5e7eb; }
+    .modal-confirm {
+      background: var(--red); color: #fff; border: none;
+      border-radius: 8px; padding: 0.6rem 1.4rem;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .modal-confirm:hover { background: var(--red-hover); }
+
+    /* Toast */
+    #toast {
+      display: none;
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #16a34a;
+      color: #fff;
+      padding: 0.75rem 1.75rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 999;
+    }
+    #toast.error { background: var(--red); }
 
     @media (max-width: 540px) {
       .response-card { padding: 1.1rem; }
@@ -150,7 +230,9 @@
       <h1>3Digree — Responses</h1>
       <div class="meta">Form ID: 3Di_ss_028</div>
     </div>
-    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    <div class="header-btns">
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    </div>
   </div>
 
   <div class="stats-row">
@@ -169,6 +251,20 @@
 
 </div>
 
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>Delete Response?</h3>
+    <p>Ye response permanently delete ho jaayegi. Wapas nahi aayegi!</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" id="modalCancel">Cancel</button>
+      <button class="modal-confirm" id="modalConfirm">Haan, Delete Karo</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -177,8 +273,86 @@
     'sb_publishable_lQc9S-u5jsMGSVYzXHv2GA_J9OEthDe'
   );
 
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = isError ? 'error' : '';
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3500);
+  }
+
+  // Modal logic
+  let pendingDeleteId = null;
+  let pendingDeleteCard = null;
+
+  document.getElementById('modalCancel').addEventListener('click', () => {
+    document.getElementById('modalOverlay').classList.remove('open');
+    pendingDeleteId = null;
+    pendingDeleteCard = null;
+  });
+
+  document.getElementById('modalConfirm').addEventListener('click', async () => {
+    if (!pendingDeleteId) return;
+    const overlay = document.getElementById('modalOverlay');
+    overlay.classList.remove('open');
+
+    const card = pendingDeleteCard;
+    card.classList.add('deleting');
+
+    const { error } = await supabase
+      .from('form_responses')
+      .delete()
+      .eq('id', pendingDeleteId);
+
+    if (error) {
+      card.classList.remove('deleting');
+      showToast('Delete nahi hua. Try again!', true);
+    } else {
+      setTimeout(() => {
+        card.remove();
+        // update total count
+        const curr = parseInt(document.getElementById('totalCount').textContent) || 0;
+        document.getElementById('totalCount').textContent = Math.max(0, curr - 1);
+        showToast('✅ Response delete ho gayi!');
+        // re-number remaining cards
+        document.querySelectorAll('.response-card').forEach((c, i, arr) => {
+          c.querySelector('.r-id').textContent = '#' + (arr.length - i);
+        });
+        if (document.querySelectorAll('.response-card').length === 0) {
+          document.getElementById('status').textContent = 'No responses yet.';
+          document.getElementById('status').style.display = 'block';
+          document.getElementById('todayCount').textContent = '0';
+          document.getElementById('totalCount').textContent = '0';
+        }
+      }, 320);
+    }
+
+    pendingDeleteId = null;
+    pendingDeleteCard = null;
+  });
+
+  const fields = [
+    { key: 'selling_area',          label: 'Selling Area' },
+    { key: 'selling_states',        label: 'Limited States' },
+    { key: 'brand_positioning',     label: 'Brand Positioning' },
+    { key: 'product_price_range',   label: 'Price Range (₹)' },
+    { key: 'usp',                   label: 'USP', isArray: true },
+    { key: 'usp_other',             label: 'USP – Other' },
+    { key: 'brand_plan',            label: 'Long-term Brand Plan' },
+    { key: 'payment_option',        label: 'Payment Option' },
+    { key: 'marketing_source',      label: 'Marketing Source' },
+    { key: 'marketing_other',       label: 'Marketing – Other' },
+    { key: 'brand_vibe',            label: 'Brand Vibe', isArray: true },
+    { key: 'brand_vibe_other',      label: 'Brand Vibe – Other' },
+    { key: 'preferred_color_theme', label: 'Preferred Color Theme' },
+    { key: 'business_model',        label: 'Business Model' },
+    { key: 'business_model_other',  label: 'Business Model – Other' },
+  ];
+
   window.loadData = async function () {
-    document.getElementById('status').textContent = 'Loading responses…';
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = 'Loading responses…';
+    statusEl.style.display = 'block';
     document.getElementById('container').innerHTML = '';
 
     const { data, error } = await supabase
@@ -187,20 +361,19 @@
       .order('created_at', { ascending: false });
 
     if (error) {
-      document.getElementById('status').textContent = 'Error loading data: ' + error.message;
+      statusEl.textContent = 'Error: ' + error.message;
       return;
     }
 
     if (!data || data.length === 0) {
-      document.getElementById('status').textContent = 'No responses yet.';
+      statusEl.textContent = 'No responses yet.';
       document.getElementById('totalCount').textContent = '0';
       document.getElementById('todayCount').textContent = '0';
       return;
     }
 
-    document.getElementById('status').style.display = 'none';
+    statusEl.style.display = 'none';
 
-    // Stats
     const today = new Date().toISOString().slice(0, 10);
     const todayCount = data.filter(r => r.created_at?.slice(0, 10) === today).length;
     document.getElementById('totalCount').textContent = data.length;
@@ -208,27 +381,10 @@
 
     const container = document.getElementById('container');
 
-    const fields = [
-      { key: 'selling_area',          label: 'Selling Area' },
-      { key: 'selling_states',        label: 'Limited States' },
-      { key: 'brand_positioning',     label: 'Brand Positioning' },
-      { key: 'product_price_range',   label: 'Price Range (₹)' },
-      { key: 'usp',                   label: 'USP', isArray: true },
-      { key: 'usp_other',             label: 'USP – Other' },
-      { key: 'brand_plan',            label: 'Long-term Brand Plan' },
-      { key: 'payment_option',        label: 'Payment Option' },
-      { key: 'marketing_source',      label: 'Marketing Source' },
-      { key: 'marketing_other',       label: 'Marketing – Other' },
-      { key: 'brand_vibe',            label: 'Brand Vibe', isArray: true },
-      { key: 'brand_vibe_other',      label: 'Brand Vibe – Other' },
-      { key: 'preferred_color_theme', label: 'Preferred Color Theme' },
-      { key: 'business_model',        label: 'Business Model' },
-      { key: 'business_model_other',  label: 'Business Model – Other' },
-    ];
-
     data.forEach((row, idx) => {
       const card = document.createElement('div');
       card.className = 'response-card';
+      card.dataset.id = row.id;
 
       const dt = row.created_at
         ? new Date(row.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
@@ -236,8 +392,11 @@
 
       card.innerHTML = `
         <div class="r-header">
-          <span class="r-id">#${data.length - idx}</span>
-          <span class="r-time">${dt}</span>
+          <div class="r-header-left">
+            <span class="r-id">#${data.length - idx}</span>
+            <span class="r-time">${dt}</span>
+          </div>
+          <button class="del-btn" data-id="${row.id}">🗑 Delete</button>
         </div>
         <div class="r-grid">
           ${fields.map(f => {
@@ -254,6 +413,14 @@
           }).join('')}
         </div>
       `;
+
+      // Delete button click
+      card.querySelector('.del-btn').addEventListener('click', () => {
+        pendingDeleteId = row.id;
+        pendingDeleteCard = card;
+        document.getElementById('modalOverlay').classList.add('open');
+      });
+
       container.appendChild(card);
     });
   };
