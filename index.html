@@ -1,11 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digree Form</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3Digree – Digree Forms</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1a56db;
+      --blue-hover: #1240b0;
+      --blue-light: #e8f0fe;
+      --blue-mid: #b3ccfc;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #d1d5db;
+      --bg: #ffffff;
+      --surface: #f9fafb;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(26,86,219,0.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f4ff;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .wrapper {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .form-header {
+      background: var(--bg);
+      border-top: 5px solid var(--blue);
+      border-radius: var(--radius);
+      padding: 2rem 2rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .form-header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--blue);
+      letter-spacing: -0.5px;
+    }
+    .form-header .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    .form-header .form-id {
+      font-size: 0.78rem;
+      color: #9ca3af;
+      margin-top: 0.4rem;
+      letter-spacing: 0.3px;
+    }
+
+    /* Card per question */
+    .q-card {
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow);
+      border: 1px solid #e5e7eb;
+    }
+    .q-label {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+    .q-label span.qnum {
+      display: inline-block;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    /* Radio / Checkbox options */
+    .options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      font-size: 0.92rem;
+      color: var(--text);
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .opt:hover { border-color: var(--blue); background: var(--blue-light); }
+    .opt input[type="radio"],
+    .opt input[type="checkbox"] { accent-color: var(--blue); width: 17px; height: 17px; flex-shrink: 0; cursor: pointer; }
+
+    /* Selected state highlight via JS */
+    .opt.selected { border-color: var(--blue); background: var(--blue-light); }
+
+    /* Sub-input that appears conditionally */
+    .sub-input-wrap {
+      margin-top: 0.5rem;
+      margin-left: 2.2rem;
+      display: none;
+    }
+    .sub-input-wrap.visible { display: block; }
+    .sub-input-wrap textarea,
+    .sub-input-wrap input[type="text"] {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s;
+      resize: vertical;
+    }
+    .sub-input-wrap textarea:focus,
+    .sub-input-wrap input[type="text"]:focus { border-color: var(--blue); }
+
+    /* Inline price input inside Q2 */
+    .price-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .price-row input[type="text"] {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .price-row input[type="text"]:focus { border-color: var(--blue); }
+
+    /* Divider inside Q2 */
+    .section-divider {
+      border: none;
+      border-top: 1.5px dashed var(--border);
+      margin: 1.1rem 0;
+    }
+
+    /* Submit */
+    .submit-wrap { margin-top: 2rem; text-align: center; }
+    .btn-submit {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 3rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 4px 14px rgba(26,86,219,0.25);
+    }
+    .btn-submit:hover { background: var(--blue-hover); }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit:disabled { background: #93aee8; cursor: not-allowed; }
+
+    /* Toast */
+    #toast {
+      display: none;
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #16a34a;
+      color: #fff;
+      padding: 0.85rem 2rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 999;
+    }
+    #toast.error { background: #dc2626; }
+
+    /* Required asterisk */
+    .req { color: #dc2626; margin-left: 2px; }
+
+    @media (max-width: 540px) {
+      .q-card { padding: 1.25rem 1.1rem; }
+      .form-header { padding: 1.5rem 1.1rem 1.2rem; }
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello</h1>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="form-header">
+    <h1>3Digree</h1>
+    <div class="subtitle">Digree Forms</div>
+    <div class="form-id">Form ID — 3Di_ss_028</div>
+  </div>
+
+  <form id="mainForm" novalidate>
+
+    <!-- Q1 -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">1</span>What is your Selling Area (Target Audience)?<span class="req">*</span></div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="selling_area" value="Whole India" required> Whole India</label>
+        <label class="opt">
+          <input type="radio" name="selling_area" value="Only Limited States"> Only Limited States
+        </label>
+      </div>
+      <div class="sub-input-wrap" id="states-wrap">
+        <textarea name="selling_states" rows="3" placeholder="Please write names of states…"></textarea>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">2</span>What will be your brand positioning and product price range?<span class="req">*</span></div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="brand_positioning" value="Budget-Friendly Brand" required> Budget-Friendly Brand</label>
+        <label class="opt"><input type="radio" name="brand_positioning" value="Premium Brand"> Premium Brand</label>
+        <label class="opt"><input type="radio" name="brand_positioning" value="Luxury Brand"> Luxury Brand</label>
+      </div>
+      <hr class="section-divider" />
+      <div class="price-row">
+        <span>Approx Product Price Range: ₹</span>
+        <input type="text" name="product_price_range" placeholder="e.g. 299 – 999" />
+      </div>
+    </div>
+
+    <!-- Q3 multiple -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">3</span>What is the main USP (Unique Selling Point) of your product? <small style="font-weight:400;color:var(--text-muted)">(Select all that apply)</small><span class="req">*</span></div>
+      <div class="options">
+        <label class="opt"><input type="checkbox" name="usp" value="Removes Bacteria"> Removes Bacteria</label>
+        <label class="opt"><input type="checkbox" name="usp" value="Removes Smell"> Removes Smell</label>
+        <label class="opt"><input type="checkbox" name="usp" value="Chemical-Free"> Chemical-Free</label>
+        <label class="opt"><input type="checkbox" name="usp" value="Food-Safe"> Food-Safe</label>
+        <label class="opt"><input type="checkbox" name="usp" value="Natural Ingredients"> Natural Ingredients</label>
+        <label class="opt"><input type="checkbox" name="usp" value="Anti-Fungal"> Anti-Fungal</label>
+        <label class="opt"><input type="checkbox" name="usp" value="Instant Cleaning"> Instant Cleaning</label>
+        <label class="opt"><input type="checkbox" name="usp" value="Other" id="usp-other-chk"> Other</label>
+      </div>
+      <div class="sub-input-wrap" id="usp-other-wrap">
+        <input type="text" name="usp_other" placeholder="Please specify…" />
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">4</span>What is your 'long-term' brand plan?<span class="req">*</span></div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="brand_plan" value="Single Product Brand" required> Single Product Brand</label>
+        <label class="opt"><input type="radio" name="brand_plan" value="Full Kitchen Products Brand"> Full Kitchen Products Brand</label>
+        <label class="opt"><input type="radio" name="brand_plan" value="Multi-Category Brand (Kitchen, Toilet, Electronic Appliances Accessories)"> Multi-Category Brand <small style="color:var(--text-muted)">(Kitchen, Toilet, Electronic Appliances Accessories)</small></label>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">5</span>What payment and shipping options will you provide?<span class="req">*</span></div>
+      <div class="q-label" style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.6rem;font-weight:600;">Payment Options</div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="payment_option" value="Prepaid Only" required> Prepaid Only</label>
+        <label class="opt"><input type="radio" name="payment_option" value="COD Only"> COD Only</label>
+        <label class="opt"><input type="radio" name="payment_option" value="Both COD + Prepaid"> Both COD + Prepaid</label>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">6</span>What will be your main traffic and marketing source?<span class="req">*</span></div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="marketing_source" value="Instagram Ads" required> Instagram Ads</label>
+        <label class="opt"><input type="radio" name="marketing_source" value="Facebook Ads"> Facebook Ads</label>
+        <label class="opt"><input type="radio" name="marketing_source" value="YouTube Shorts"> YouTube Shorts</label>
+        <label class="opt"><input type="radio" name="marketing_source" value="Influencer Marketing"> Influencer Marketing</label>
+        <label class="opt"><input type="radio" name="marketing_source" value="SEO / Google"> SEO / Google</label>
+        <label class="opt"><input type="radio" name="marketing_source" value="WhatsApp Marketing"> WhatsApp Marketing</label>
+        <label class="opt"><input type="radio" name="marketing_source" value="Organic Social Media"> Organic Social Media</label>
+        <label class="opt"><input type="radio" name="marketing_source" value="Other" id="mkt-other-radio"> Other</label>
+      </div>
+      <div class="sub-input-wrap" id="mkt-other-wrap">
+        <input type="text" name="marketing_other" placeholder="Please specify…" />
+      </div>
+    </div>
+
+    <!-- Q7 multiple -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">7</span>What type of brand vibe and design style do you want? <small style="font-weight:400;color:var(--text-muted)">(Select all that apply)</small><span class="req">*</span></div>
+      <div class="options">
+        <label class="opt"><input type="checkbox" name="brand_vibe" value="Luxury"> Luxury</label>
+        <label class="opt"><input type="checkbox" name="brand_vibe" value="Modern Minimal"> Modern Minimal</label>
+        <label class="opt"><input type="checkbox" name="brand_vibe" value="Scientific Cleaning"> Scientific Cleaning</label>
+        <label class="opt"><input type="checkbox" name="brand_vibe" value="Eco-Friendly"> Eco-Friendly</label>
+        <label class="opt"><input type="checkbox" name="brand_vibe" value="Bold Advertising Style"> Bold Advertising Style</label>
+        <label class="opt"><input type="checkbox" name="brand_vibe" value="Aesthetic Brand"> Aesthetic Brand</label>
+        <label class="opt"><input type="checkbox" name="brand_vibe" value="Other" id="vibe-other-chk"> Other</label>
+      </div>
+      <div class="sub-input-wrap" id="vibe-other-wrap">
+        <input type="text" name="brand_vibe_other" placeholder="Please specify…" />
+      </div>
+      <hr class="section-divider" />
+      <div style="font-size:0.88rem;font-weight:600;margin-bottom:0.5rem;color:var(--text);">Preferred Color Theme</div>
+      <input type="text" name="preferred_color_theme" placeholder="e.g. Blue & White, Earthy Tones…"
+        style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;font-size:0.9rem;color:var(--text);background:var(--surface);outline:none;" />
+    </div>
+
+    <!-- Q8 -->
+    <div class="q-card">
+      <div class="q-label"><span class="qnum">8</span>What business model will you use?<span class="req">*</span></div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="business_model" value="Own Manufacturing" required> Own Manufacturing</label>
+        <label class="opt"><input type="radio" name="business_model" value="Third-Party Manufacturing"> Third-Party Manufacturing</label>
+        <label class="opt"><input type="radio" name="business_model" value="Drop Shipping"> Drop Shipping</label>
+        <label class="opt"><input type="radio" name="business_model" value="Local Supplier Packing"> Local Supplier Packing</label>
+        <label class="opt"><input type="radio" name="business_model" value="Other" id="biz-other-radio"> Other</label>
+      </div>
+      <div class="sub-input-wrap" id="biz-other-wrap">
+        <input type="text" name="business_model_other" placeholder="Please specify…" />
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-wrap">
+      <button type="submit" class="btn-submit" id="submitBtn">Submit Form</button>
+    </div>
+
+  </form>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+  const supabase = createClient(
+    'https://oqkutrgjpbohhpikarer.supabase.co',
+    'sb_publishable_lQc9S-u5jsMGSVYzXHv2GA_J9OEthDe'
+  );
+
+  // ── Opt highlight sync ──────────────────────────────────
+  document.querySelectorAll('.opt input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const siblings = document.querySelectorAll(`input[name="${inp.name}"]`);
+      siblings.forEach(s => s.closest('.opt').classList.remove('selected'));
+      if (inp.type === 'radio') inp.closest('.opt').classList.add('selected');
+      if (inp.type === 'checkbox') {
+        if (inp.checked) inp.closest('.opt').classList.add('selected');
+      }
+    });
+  });
+
+  // ── Conditional: Q1 states ──────────────────────────────
+  document.querySelectorAll('input[name="selling_area"]').forEach(r => {
+    r.addEventListener('change', () => {
+      document.getElementById('states-wrap').classList.toggle(
+        'visible', r.value === 'Only Limited States' && r.checked
+      );
+    });
+  });
+
+  // ── Conditional: Q3 USP other ──────────────────────────
+  document.getElementById('usp-other-chk').addEventListener('change', e => {
+    document.getElementById('usp-other-wrap').classList.toggle('visible', e.target.checked);
+  });
+
+  // ── Conditional: Q6 marketing other ───────────────────
+  document.getElementById('mkt-other-radio').addEventListener('change', e => {
+    document.getElementById('mkt-other-wrap').classList.toggle('visible', e.target.checked);
+  });
+
+  // ── Conditional: Q7 vibe other ────────────────────────
+  document.getElementById('vibe-other-chk').addEventListener('change', e => {
+    document.getElementById('vibe-other-wrap').classList.toggle('visible', e.target.checked);
+  });
+
+  // ── Conditional: Q8 business model other ──────────────
+  document.getElementById('biz-other-radio').addEventListener('change', e => {
+    document.getElementById('biz-other-wrap').classList.toggle('visible', e.target.checked);
+  });
+
+  // ── Toast helper ───────────────────────────────────────
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = isError ? 'error' : '';
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 4000);
+  }
+
+  // ── Form submit ───────────────────────────────────────
+  document.getElementById('mainForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const btn = document.getElementById('submitBtn');
+
+    // --- basic required validation ---
+    const requiredRadios = ['selling_area','brand_positioning','brand_plan','payment_option','marketing_source','business_model'];
+    for (const name of requiredRadios) {
+      if (!f.querySelector(`input[name="${name}"]:checked`)) {
+        showToast(`Please answer Question: field "${name.replace(/_/g,' ')}" is required.`, true);
+        return;
+      }
+    }
+    // Q3 USP at least one
+    if (!f.querySelector('input[name="usp"]:checked')) {
+      showToast('Please select at least one USP option (Q3).', true);
+      return;
+    }
+    // Q7 vibe at least one
+    if (!f.querySelector('input[name="brand_vibe"]:checked')) {
+      showToast('Please select at least one brand vibe option (Q7).', true);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    // --- collect values ---
+    const get = name => f.querySelector(`input[name="${name}"]:checked`)?.value ?? null;
+    const getAll = name => [...f.querySelectorAll(`input[name="${name}"]:checked`)].map(i => i.value);
+    const getText = name => f.querySelector(`[name="${name}"]`)?.value?.trim() || null;
+
+    const payload = {
+      form_id: '3Di_ss_028',
+      selling_area: get('selling_area'),
+      selling_states: get('selling_area') === 'Only Limited States' ? getText('selling_states') : null,
+      brand_positioning: get('brand_positioning'),
+      product_price_range: getText('product_price_range'),
+      usp: getAll('usp'),
+      usp_other: getText('usp_other'),
+      brand_plan: get('brand_plan'),
+      payment_option: get('payment_option'),
+      marketing_source: get('marketing_source'),
+      marketing_other: getText('marketing_other'),
+      brand_vibe: getAll('brand_vibe'),
+      brand_vibe_other: getText('brand_vibe_other'),
+      preferred_color_theme: getText('preferred_color_theme'),
+      business_model: get('business_model'),
+      business_model_other: getText('business_model_other'),
+    };
+
+    const { error } = await supabase.from('form_responses').insert([payload]);
+
+    btn.disabled = false;
+    btn.textContent = 'Submit Form';
+
+    if (error) {
+      console.error(error);
+      showToast('Something went wrong. Please try again.', true);
+    } else {
+      showToast('✅ Response submitted successfully! Thank you.');
+      f.reset();
+      document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+      document.querySelectorAll('.sub-input-wrap').forEach(w => w.classList.remove('visible'));
+    }
+  });
+</script>
 </body>
 </html>
